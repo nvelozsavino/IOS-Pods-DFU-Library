@@ -164,6 +164,35 @@ internal class ButtonlessDFU : NSObject, CBPeripheralDelegate, DFUCharacteristic
         peripheral.setNotifyValue(true, for: characteristic)
     }
     
+    
+    
+    /**
+     Disable notifications or indications for the DFU Control Point characteristics, depending on the characteristic property.
+     Reports success or an error using callbacks.
+     
+     - parameter success: Method called when notifications were successfully disabled
+     - parameter report:  Method called in case of an error
+     */
+    func disable(onSuccess success: Callback?, onError report: ErrorCallback?) {
+        // Save callbacks
+        self.success = success
+        self.report  = report
+        
+        // Get the peripheral object
+        let peripheral = characteristic.service.peripheral
+        
+        // Set the peripheral delegate to self
+        peripheral.delegate = self
+        
+        if characteristic.properties.contains(.indicate) {
+            logger.v("Enabling indications for \(characteristic.uuid.uuidString)...")
+        } else {
+            logger.v("Enabling notifications for \(characteristic.uuid.uuidString)...")
+        }
+        logger.d("peripheral.setNotifyValue(true, for: \(characteristic.uuid.uuidString))")
+        peripheral.setNotifyValue(false, for: characteristic)
+    }
+    
     /**
      Sends given request to the Buttonless DFU characteristic. Reports success or an error
      using callbacks.
@@ -187,7 +216,7 @@ internal class ButtonlessDFU : NSObject, CBPeripheralDelegate, DFUCharacteristic
         
         logger.v("Writing to characteristic \(buttonlessUUID)...")
         logger.d("peripheral.writeValue(0x\(request.data.hexString), for: \(buttonlessUUID), type: .withResponse)")
-        peripheral.writeValue(request.data, for: characteristic, type: .withoutResponse)
+        peripheral.writeValue(request.data, for: characteristic, type: .withResponse)
     }
     
     // MARK: - Peripheral Delegate callbacks
