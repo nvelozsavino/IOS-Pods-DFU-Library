@@ -43,10 +43,8 @@ import CoreBluetooth
     
     /// A temporary callback used to report end of an operation.
     private var success          : Callback?
-    private var success2          : Callback?
     /// A temporary callback used to report an operation error.
     private var report           : ErrorCallback?
-    private var report2           : ErrorCallback?
     /// A temporaty callback used to report progress status.
     private var progressDelegate : DFUProgressDelegate?
     
@@ -145,29 +143,23 @@ import CoreBluetooth
      */
     func enableControlPoint(onSuccess success: @escaping Callback, onError report: @escaping ErrorCallback) {
         if !aborted {
+            func enableIndications() {
+                self.buttonlessDfuCharacteristic!.enable(onSuccess: success, onError: report)
+            }
             // Support for Buttonless DFU Service
             if buttonlessDfuCharacteristic != nil {               
-                buttonlessDfuCharacteristic!.disable(onSuccess: { self.delegate?.enableControlPoint2(onSuccess: success, onError: report) },
-                                                     onError: report)                                   
+                buttonlessDfuCharacteristic!.disable(onSuccess: {
+                    enableIndications()
+                }, onError: {
+                    error, message in
+                    report (error,message)
+                })
                 return
             }
             // End
             dfuControlPointCharacteristic!.enableNotifications(onSuccess: success, onError: report)
         } else {
             sendReset(onError: report)
-        }
-    }
-    
-    func enableControlPoint2(onSuccess success2: @escaping Callback, onError report2: @escaping ErrorCallback){
-        if !aborted {
-            // Support for Buttonless DFU Service
-            if buttonlessDfuCharacteristic != nil {               
-                buttonlessDfuCharacteristic!.enable(onSuccess: onSuccess: success2, onError: report2)                                   
-                return
-            }
-            // End
-        } else {
-            sendReset(onError: report2)
         }
     }
     
