@@ -187,7 +187,7 @@ internal class ButtonlessDFU : NSObject, CBPeripheralDelegate, DFUCharacteristic
         
         logger.v("Writing to characteristic \(buttonlessUUID)...")
         logger.d("peripheral.writeValue(0x\(request.data.hexString), for: \(buttonlessUUID), type: .withResponse)")
-        peripheral.writeValue(request.data, for: characteristic, type: .withResponse)
+        peripheral.writeValue(request.data, for: characteristic, type: .withoutResponse)
     }
     
     // MARK: - Peripheral Delegate callbacks
