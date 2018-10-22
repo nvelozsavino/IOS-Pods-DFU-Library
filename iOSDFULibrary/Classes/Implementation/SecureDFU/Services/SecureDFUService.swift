@@ -502,7 +502,7 @@ import CoreBluetooth
             }
             
             // If the device may support setting alternative advertising name in the bootloader mode, try it
-            if rename && buttonlessDfuCharacteristic!.maySupportSettingName {
+            if false && rename && buttonlessDfuCharacteristic!.maySupportSettingName {
                 // Generate a random 8-character long name
                 let name = String(format: "Dfu%05d", arc4random_uniform(100000))
                 
