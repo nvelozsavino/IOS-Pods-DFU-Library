@@ -145,7 +145,13 @@ import CoreBluetooth
         if !aborted {
             // Support for Buttonless DFU Service
             if buttonlessDfuCharacteristic != nil {
-                buttonlessDfuCharacteristic!.enable(onSuccess: success, onError: report)
+                (
+                buttonlessDfuCharacteristic!.disable(onSuccess: {
+                    buttonlessDfuCharacteristic!.enable(onSuccess: success, onError: report)
+                },
+                                                     onError: report)
+                    
+                
                 return
             }
             // End
