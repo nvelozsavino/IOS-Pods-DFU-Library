@@ -520,6 +520,7 @@ import CoreBluetooth
                         enterBootloader()
                     } else {
                         // Something else got wrong
+                        logger.v("Trying setting bootloader name to \(name) Error \(error) Message \(message)")
                         report(error, message)
                     }
                 })
