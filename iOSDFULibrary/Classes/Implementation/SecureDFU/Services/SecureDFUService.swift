@@ -508,7 +508,7 @@ import CoreBluetooth
             func enterBootloader() {
                 self.buttonlessDfuCharacteristic!.send(ButtonlessDFURequest.enterBootloader, onSuccess: nil, onError: {
                     error, message in
-                    self.logger.w("Something else got wrong \(error!)")
+                    self.logger.w("Something else got wrong \(error)")
                     self.logger.w("Something else got wrong \(message)")
                     if error == .writingCharacteristicFailed {
                         self.logger.w("Error writing char but continuing")
