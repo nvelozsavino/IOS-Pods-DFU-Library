@@ -224,21 +224,31 @@ internal class ButtonlessDFU : NSObject, CBPeripheralDelegate, DFUCharacteristic
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         if error != nil {
             if characteristic.properties.contains(.indicate) {
-                logger.e("Enabling indications failed")
+                logger.e("Enabling/Disabling indications failed")
                 logger.e(error!)
                 report?(.enablingControlPointFailed, "Enabling indications failed")
             } else {
-                logger.e("Enabling notifications failed")
+                logger.e("Enabling/Disabling notifications failed")
                 logger.e(error!)
                 report?(.enablingControlPointFailed, "Enabling notifications failed")
             }
         } else {
             if characteristic.properties.contains(.indicate) {
-                logger.v("Indications enabled for \(characteristic.uuid.uuidString)")
-                logger.a("Buttonless DFU indications enabled")
+                if characteristic.isNotifying {
+                    logger.v("Indications are enabled for \(characteristic.uuid.uuidString)")
+                    logger.a("Buttonless DFU indications are enabled")
+                } else {
+                    logger.v("Indications are disabled for \(characteristic.uuid.uuidString)")
+                    logger.a("Buttonless DFU indications are disabled")
+                }
             } else {
-                logger.v("Notifications enabled for \(characteristic.uuid.uuidString)")
-                logger.a("Buttonless DFU notifications enabled")
+                if characteristic.isNotifying {
+                    logger.v("Notifications are enabled for \(characteristic.uuid.uuidString)")
+                    logger.a("Buttonless DFU notifications are enabled")
+                } else {
+                    logger.v("Notifications are disabled for \(characteristic.uuid.uuidString)")
+                    logger.a("Buttonless DFU notifications are disabled")
+                }
             }
             success?()
         }
