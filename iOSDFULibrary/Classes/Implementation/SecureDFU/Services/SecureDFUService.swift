@@ -506,7 +506,13 @@ import CoreBluetooth
     func jumpToBootloaderMode(withAlternativeAdvertisingName rename: Bool, onError report: @escaping ErrorCallback) {
         if !aborted {
             func enterBootloader() {
-                self.buttonlessDfuCharacteristic!.send(ButtonlessDFURequest.enterBootloader, onSuccess: nil, onError: report)
+                self.buttonlessDfuCharacteristic!.send(ButtonlessDFURequest.enterBootloader, onSuccess: nil, onError: {
+                    error, message in
+                    self.logger.w("Something else got wrong \(error)")
+                    self.logger.w("Something else got wrong \(message)")
+                    report(error,message)
+                })
+                                         
             }
             
             // If the device may support setting alternative advertising name in the bootloader mode, try it
