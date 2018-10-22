@@ -43,8 +43,10 @@ import CoreBluetooth
     
     /// A temporary callback used to report end of an operation.
     private var success          : Callback?
+    private var success2          : Callback?
     /// A temporary callback used to report an operation error.
     private var report           : ErrorCallback?
+    private var report2           : ErrorCallback?
     /// A temporaty callback used to report progress status.
     private var progressDelegate : DFUProgressDelegate?
     
@@ -156,16 +158,16 @@ import CoreBluetooth
         }
     }
     
-    func enableControlPoint2(onSuccess success: @escaping Callback, onError report: @escaping ErrorCallback){
+    func enableControlPoint2(onSuccess success2: @escaping Callback, onError report2: @escaping ErrorCallback){
         if !aborted {
             // Support for Buttonless DFU Service
             if buttonlessDfuCharacteristic != nil {               
-                buttonlessDfuCharacteristic!.enable(onSuccess: onSuccess: success, onError: report)                                   
+                buttonlessDfuCharacteristic!.enable(onSuccess: onSuccess: success2, onError: report2)                                   
                 return
             }
             // End
         } else {
-            sendReset(onError: report)
+            sendReset(onError: report2)
         }
     }
     
