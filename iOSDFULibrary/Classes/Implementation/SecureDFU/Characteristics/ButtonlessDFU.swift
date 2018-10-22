@@ -185,11 +185,11 @@ internal class ButtonlessDFU : NSObject, CBPeripheralDelegate, DFUCharacteristic
         peripheral.delegate = self
         
         if characteristic.properties.contains(.indicate) {
-            logger.v("Enabling indications for \(characteristic.uuid.uuidString)...")
+            logger.v("Disabling indications for \(characteristic.uuid.uuidString)...")
         } else {
-            logger.v("Enabling notifications for \(characteristic.uuid.uuidString)...")
+            logger.v("Disabling notifications for \(characteristic.uuid.uuidString)...")
         }
-        logger.d("peripheral.setNotifyValue(true, for: \(characteristic.uuid.uuidString))")
+        logger.d("peripheral.setNotifyValue(false, for: \(characteristic.uuid.uuidString))")
         peripheral.setNotifyValue(false, for: characteristic)
     }
     
