@@ -145,13 +145,25 @@ import CoreBluetooth
         if !aborted {
             // Support for Buttonless DFU Service
             if buttonlessDfuCharacteristic != nil {               
-                buttonlessDfuCharacteristic!.disable(onSuccess: { buttonlessDfuCharacteristic!.enable(onSuccess: success, onError: report) },
-                                                     onError: report)
-                                   
+                buttonlessDfuCharacteristic!.disable(onSuccess: { self.delegate?.enableControlPoint2(onSuccess: success, onError: report) },
+                                                     onError: report)                                   
                 return
             }
             // End
             dfuControlPointCharacteristic!.enableNotifications(onSuccess: success, onError: report)
+        } else {
+            sendReset(onError: report)
+        }
+    }
+    
+    func enableControlPoint2(onSuccess success: @escaping Callback, onError report: @escaping ErrorCallback){
+        if !aborted {
+            // Support for Buttonless DFU Service
+            if buttonlessDfuCharacteristic != nil {               
+                buttonlessDfuCharacteristic!.enable(onSuccess: onSuccess: success, onError: report)                                   
+                return
+            }
+            // End
         } else {
             sendReset(onError: report)
         }
