@@ -144,14 +144,10 @@ import CoreBluetooth
     func enableControlPoint(onSuccess success: @escaping Callback, onError report: @escaping ErrorCallback) {
         if !aborted {
             // Support for Buttonless DFU Service
-            if buttonlessDfuCharacteristic != nil {
-                (
-                buttonlessDfuCharacteristic!.disable(onSuccess: {
-                    buttonlessDfuCharacteristic!.enable(onSuccess: success, onError: report)
-                },
+            if buttonlessDfuCharacteristic != nil {               
+                buttonlessDfuCharacteristic!.disable(onSuccess: { buttonlessDfuCharacteristic!.enable(onSuccess: success, onError: report) },
                                                      onError: report)
-                    
-                
+                                   
                 return
             }
             // End
