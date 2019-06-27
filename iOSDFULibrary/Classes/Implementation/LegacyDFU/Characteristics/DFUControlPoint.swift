@@ -63,25 +63,25 @@ internal enum Request {
     var data : Data {
         switch self {
         case .jumpToBootloader:
-            return Data(bytes: [DFUOpCode.startDfu.code, FIRMWARE_TYPE_APPLICATION])
+            return Data([DFUOpCode.startDfu.code, FIRMWARE_TYPE_APPLICATION])
         case .startDfu(let type):
-            return Data(bytes: [DFUOpCode.startDfu.code, type])
+            return Data([DFUOpCode.startDfu.code, type])
         case .startDfu_v1:
-            return Data(bytes: [DFUOpCode.startDfu.code])
+            return Data([DFUOpCode.startDfu.code])
         case .initDfuParameters(let req):
-            return Data(bytes: [DFUOpCode.initDfuParameters.code, req.code])
+            return Data([DFUOpCode.initDfuParameters.code, req.code])
         case .initDfuParameters_v1:
-            return Data(bytes: [DFUOpCode.initDfuParameters.code])
+            return Data([DFUOpCode.initDfuParameters.code])
         case .receiveFirmwareImage:
-            return Data(bytes: [DFUOpCode.receiveFirmwareImage.code])
+            return Data([DFUOpCode.receiveFirmwareImage.code])
         case .validateFirmware:
-            return Data(bytes: [DFUOpCode.validateFirmware.code])
+            return Data([DFUOpCode.validateFirmware.code])
         case .activateAndReset:
-            return Data(bytes: [DFUOpCode.activateAndReset.code])
+            return Data([DFUOpCode.activateAndReset.code])
         case .reset:
-            return Data(bytes: [DFUOpCode.reset.code])
+            return Data([DFUOpCode.reset.code])
         case .packetReceiptNotificationRequest(let number):
-            var data = Data(bytes: [DFUOpCode.packetReceiptNotificationRequest.code])
+            var data = Data([DFUOpCode.packetReceiptNotificationRequest.code])
             data += number.littleEndian
             return data
         }
@@ -169,8 +169,8 @@ internal struct PacketReceiptNotification {
         // in SDK 5.2.0.39364 the bytesReveived value in a PRN packet is 16-bit long, instad of 32-bit.
         // However, the packet is still 5 bytes long and the two last bytes are 0x00-00.
         // This has to be taken under consideration when comparing number of bytes sent and received as
-        // the latter counter may rewind if fw size is > 0xFFFF bytes (LegacyDFUService:L372).
-        let bytesReceived: UInt32 = data.subdata(in: 1 ..< 4).withUnsafeBytes { $0.pointee }
+        // the latter counter may rewind if fw size is > 0xFFFF bytes (LegacyDFUService:L446).
+        let bytesReceived: UInt32 = data.asValue(offset: 1)
         self.bytesReceived = bytesReceived
     }
 }
@@ -204,8 +204,8 @@ internal struct PacketReceiptNotification {
      Enables notifications for the DFU Control Point characteristics.
      Reports success or an error using callbacks.
     
-     - parameter success: method called when notifications were successfully enabled
-     - parameter report:  method called in case of an error
+     - parameter success: Method called when notifications were successfully enabled.
+     - parameter report:  Method called in case of an error.
      */
     func enableNotifications(onSuccess success: Callback?, onError report: ErrorCallback?) {
         // Save callbacks
@@ -227,9 +227,9 @@ internal struct PacketReceiptNotification {
      Sends given request to the DFU Control Point characteristic.
      Reports success or an error using callbacks.
      
-     - parameter request: request to be sent
-     - parameter success: method called when peripheral reported with status success
-     - parameter report:  method called in case of an error
+     - parameter request: Request to be sent.
+     - parameter success: Method called when peripheral reported with status success.
+     - parameter report:  Method called in case of an error.
      */
     func send(_ request: Request, onSuccess success: Callback?, onError report: ErrorCallback?) {
         // Save callbacks and parameter
@@ -269,10 +269,10 @@ internal struct PacketReceiptNotification {
      with success status was received. Sending the firmware is done using DFU Packet
      characteristic.
      
-     - parameter success: method called when peripheral reported with status success
-     - parameter proceed: method called the a PRN has been received and sending following
-     data can be resumed
-     - parameter report:  method called in case of an error
+     - parameter success: Method called when peripheral reported with status success.
+     - parameter proceed: Method called the a PRN has been received and sending following
+     data can be resumed.
+     - parameter report:  Method called in case of an error.
      */
     func waitUntilUploadComplete(onSuccess success: Callback?, onPacketReceiptNofitication proceed: ProgressCallback?, onError report: ErrorCallback?) {
         // Save callbacks. The proceed callback will be called periodically whenever a packet receipt notification is received. It resumes uploading.

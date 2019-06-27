@@ -54,7 +54,7 @@ internal class DFUPacket: DFUCharacteristic {
      Sends the firmware sizes in format [softdevice size, bootloader size, application size],
      where each size is a UInt32 number.
     
-     - parameter size: sizes of firmware in the current part
+     - parameter size: Sizes of firmware in the current part.
      */
     func sendFirmwareSize(_ size: DFUFirmwareSize) {
         // Get the peripheral object
@@ -75,7 +75,7 @@ internal class DFUPacket: DFUCharacteristic {
     /**
      Sends the application firmware size in format [application size] (UInt32).
      
-     - parameter size: sizes of firmware in the current part.
+     - parameter size: Sizes of firmware in the current part.
      Only the application size may ne grater than 0.
      */
     func sendFirmwareSize_v1(_ size: DFUFirmwareSize) {
@@ -95,7 +95,7 @@ internal class DFUPacket: DFUCharacteristic {
     /**
      Sends the whole content of the data object.
      
-     - parameter data: the data to be sent
+     - parameter data: The data to be sent.
      */
     func sendInitPacket(_ data: Data) {
         // Get the peripheral object
@@ -125,12 +125,14 @@ internal class DFUPacket: DFUCharacteristic {
      Sends next number of packets from given firmware data and reports a progress.
      This method does not notify progress delegate twice about the same percentage.
      
-     - parameter aPRNValue:         number of packets to be sent before a Packet Receipt Notification is expected
-     Set to 0 to disable Packet Receipt Notification procedure (not recommended)
-     - parameter aFirmware:         the firmware to be sent
-     - parameter aProgressDelegate: an optional progress delegate
+     - parameter prnValue: Number of packets to be sent before a Packet Receipt Notification is expected
+     Set to 0 to disable Packet Receipt Notification procedure (not recommended).
+     - parameter firmware: The firmware to be sent.
+     - parameter progress: An optional progress delegate.
+     - parameter queue:    The queue to dispatch progress events on.
      */
-    func sendNext(_ prnValue: UInt16, packetsOf firmware: DFUFirmware, andReportProgressTo progress: DFUProgressDelegate?) {
+    func sendNext(_ prnValue: UInt16, packetsOf firmware: DFUFirmware,
+                  andReportProgressTo progress: DFUProgressDelegate?, on queue: DispatchQueue) {
         // Get the peripheral object
         let peripheral = characteristic.service.peripheral
         
@@ -153,7 +155,7 @@ internal class DFUPacket: DFUCharacteristic {
             lastTime = startTime
             
             // Notify progress delegate that upload has started (0%)
-            DispatchQueue.main.async(execute: {
+            queue.async(execute: {
                 progress?.dfuProgressDidChange(
                     for:   firmware.currentPart,
                     outOf: firmware.parts,
@@ -195,7 +197,7 @@ internal class DFUPacket: DFUCharacteristic {
                 lastTime = now
                 bytesSentSinceProgessNotification = bytesSent
                 
-                DispatchQueue.main.async(execute: {
+                queue.async(execute: {
                     progress?.dfuProgressDidChange(
                         for:   firmware.currentPart,
                         outOf: firmware.parts,

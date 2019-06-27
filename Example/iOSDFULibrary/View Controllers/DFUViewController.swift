@@ -168,21 +168,25 @@ class DFUViewController: UIViewController, CBCentralManagerDelegate, DFUServiceD
         }
         
         // Update UI
+        stopProcessButton.setTitle("Stop process", for: .normal)
         stepStartTime = Date()
         stepTimerLabel.text = "0:00"
         stepDescriptionLabel.text = firmwareProvider.description
         stepProgressView.progress = 0.0
         partProgressView.progress = 0.0
+        
+        // Update counters
+        currentFirmwarePartsCompleted = 0
 
         // Create DFU initiator with some default configuration
-        let dfuInitiator = DFUServiceInitiator(target: dfuPeripheral, queue: DispatchQueue(label: "Other"))
+        let dfuInitiator = DFUServiceInitiator(queue: DispatchQueue(label: "Other"))
         dfuInitiator.delegate = self
         dfuInitiator.progressDelegate = self
         dfuInitiator.logger = self
 
         // Here would be a good chance to change the UUIDs to your custom UUIDs
 
-        //let customUUIDs = [ DFUUuid(withUUID: CBUUID(string: "46B3C11D-7AA7-DFB8-2998-B0BABBF03670"), forType: .lagacyService),
+        //let customUUIDs = [ DFUUuid(withUUID: CBUUID(string: "46B3C11D-7AA7-DFB8-2998-B0BABBF03670"), forType: .legacyService),
         //                    DFUUuid(withUUID: CBUUID(string: "00001531-1212-EFDE-1523-000000000000"), forType: .legacyControlPoint),
         //                    DFUUuid(withUUID: CBUUID(string: "00001532-1212-EFDE-1523-000000000000"), forType: .legacyPacket),
         //                    DFUUuid(withUUID: CBUUID(string: "00001534-1212-EFDE-1523-000000000000"), forType: .legacyVersion),
@@ -202,7 +206,7 @@ class DFUViewController: UIViewController, CBCentralManagerDelegate, DFUServiceD
         // Apply step's modifications to the DFU initiator
         firmwareProvider.applyModifier(to: dfuInitiator)
         
-        dfuController = dfuInitiator.with(firmware: firmware).start()
+        dfuController = dfuInitiator.with(firmware: firmware).start(target: dfuPeripheral)
     }
     
     func prepareNextStep() {
@@ -275,6 +279,8 @@ class DFUViewController: UIViewController, CBCentralManagerDelegate, DFUServiceD
                 }
             } else {
                 stopTimer()
+                stopProcessButton.setTitle("Restart", for: .normal)
+                stopProcessButton.isEnabled = true
                 stepDescriptionLabel.text = "Test finished"
             }
         }
@@ -338,7 +344,7 @@ class DFUViewController: UIViewController, CBCentralManagerDelegate, DFUServiceD
         stepProgressView.setProgress(stepProgress, animated: true)
         
         // Increment the parts counter for 2-part uploads
-        if progress == 100 && part == 1 && totalParts == 2 {
+        if progress == 100 && part == 1 && totalParts == 2 || (currentFirmwarePartsCompleted == 0 && part == 2) {
             currentFirmwarePartsCompleted += 1
             partsCompleted += 1
         }

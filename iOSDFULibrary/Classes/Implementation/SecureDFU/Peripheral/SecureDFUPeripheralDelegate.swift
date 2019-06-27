@@ -30,7 +30,7 @@ internal protocol SecureDFUPeripheralDelegate : DFUPeripheralDelegate {
     /**
      Callback when Command Object Info has been received from the peripheral.
      
-     - parameter maxLen: The maximum size of the Init Packet in bytes
+     - parameter maxLen: The maximum size of the Init Packet in bytes.
      - parameter offset: Number of bytes of Init Packet already sent, for example during last DFU operation.
      This resets to 0 on Create Command Object or when the DFU operation completes.
      - parameter crc: The CRC-32 calculated from the 'offset' bytes. This may be used to calculate if
@@ -88,6 +88,17 @@ internal protocol SecureDFUPeripheralDelegate : DFUPeripheralDelegate {
      may reset if the whole firmware was sent.
      */
     func peripheralDidExecuteObject()
+    
+    /**
+     Callback when the Command Object has been rejected by the target device by sending a Remote DFU Error,
+     but the firmware contains a second part that the service should try to send. Perhaps the Soft Device
+     and Bootloader were sent before and the target rejects second update (bootloader can't be updated with
+     one with the same FW version). Application update should succeeded in such case.
+     
+     - parameter error:   The error that occurred.
+     - parameter message: The error message.
+     */
+    func peripheralRejectedCommandObject(withError error: DFUError, andMessage message: String)
 
     /**
      Callback when Data Object was successfully sent.

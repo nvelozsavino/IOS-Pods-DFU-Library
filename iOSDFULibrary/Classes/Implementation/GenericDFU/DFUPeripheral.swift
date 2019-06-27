@@ -50,6 +50,7 @@ internal protocol BaseDFUPeripheralAPI : class, DFUController {
 internal class BaseDFUPeripheral<TD : BasePeripheralDelegate> : NSObject, BaseDFUPeripheralAPI, CBPeripheralDelegate, CBCentralManagerDelegate {
     /// Bluetooth Central Manager used to scan for the peripheral.
     internal let centralManager: CBCentralManager
+    internal let queue: DispatchQueue
     /// The DFU Target peripheral.
     internal var peripheral: CBPeripheral?
     /// The peripheral delegate.
@@ -73,22 +74,23 @@ internal class BaseDFUPeripheral<TD : BasePeripheralDelegate> : NSObject, BaseDF
         return [uuidHelper.legacyDFUService, uuidHelper.secureDFUService]
         */
     }
-    /// A flag indicating whether the eperimental Buttonless DFU Service in Secure DFU is supported
+    /// A flag indicating whether the eperimental Buttonless DFU Service in Secure DFU is supported.
     internal let experimentalButtonlessServiceInSecureDfuEnabled: Bool
-    /// Default error callback
+    /// Default error callback.
     internal var defaultErrorCallback: ErrorCallback {
         return { (error, message) in self.delegate?.error(error, didOccurWithMessage: message) }
     }
 
-    /// UUIDs for Service/Characteristics
+    /// UUIDs for Service/Characteristics.
     internal var uuidHelper: DFUUuidHelper
 
     /// A flag set when upload has been aborted.
     fileprivate var aborted: Bool = false
     
-    init(_ initiator: DFUServiceInitiator) {
+    init(_ initiator: DFUServiceInitiator, _ logger: LoggerHelper) {
         self.centralManager = initiator.centralManager
-        self.logger = LoggerHelper(initiator.logger)
+        self.queue = initiator.queue
+        self.logger = logger
         self.experimentalButtonlessServiceInSecureDfuEnabled = initiator.enableUnsafeExperimentalButtonlessServiceInSecureDfu
         self.uuidHelper = initiator.uuidHelper
 
@@ -140,7 +142,9 @@ internal class BaseDFUPeripheral<TD : BasePeripheralDelegate> : NSObject, BaseDF
     func destroy() {
         centralManager.delegate = nil
         peripheral?.delegate = nil
-        peripheral = nil
+        // Peripheral can't be cleared here to make restart() possible.
+        // See https://github.com/NordicSemiconductor/IOS-Pods-DFU-Library/issues/269
+        // peripheral = nil
         delegate = nil
     }
     
@@ -180,7 +184,7 @@ internal class BaseDFUPeripheral<TD : BasePeripheralDelegate> : NSObject, BaseDF
             stateAsString = "Unauthorized"
         case .unsupported:
             stateAsString = "Unsupported"
-        case .unknown:
+        default:
             stateAsString = "Unknown"
         }
         logger.d("[Callback] Central Manager did update state to: \(stateAsString)")
@@ -351,7 +355,7 @@ internal class BaseDFUPeripheral<TD : BasePeripheralDelegate> : NSObject, BaseDF
     /**
      Looks for a DFU Service in given list of services.
      
-     - returns: a DFUService type if a DFU service has been found, or nil if services
+     - returns: A DFUService type if a DFU service has been found, or nil if services
      are nil or the list does not contain any supported DFU Service.
      */
     private func findDfuService(in services:[CBService]?) -> CBService? {
@@ -421,7 +425,7 @@ internal protocol DFUPeripheralAPI : BaseDFUPeripheralAPI {
      - parameter forceDfu: should the service assume the device is in DFU Bootloader mode when
      DFU Version characteristic does not exist and at least one other service has been found on the device.
      
-     - returns: true if device needs buttonless jump to DFU Bootloader mode
+     - returns: True if device needs buttonless jump to DFU Bootloader mode.
      */
     func isInApplicationMode(_ forceDfu: Bool) -> Bool
     
@@ -437,7 +441,7 @@ internal protocol DFUPeripheralAPI : BaseDFUPeripheralAPI {
     /**
      Returns whether the Init Packet is required by the target DFU device.
      
-     - returns: true if init packet is required, false if not. Init packet is required
+     - returns: True if init packet is required, false if not. Init packet is required
      since DFU Bootloader version 0.5 (SDK 7.0.0).
      */
     func isInitPacketRequired() -> Bool
@@ -448,7 +452,7 @@ internal protocol DFUPeripheralAPI : BaseDFUPeripheralAPI {
     var activating: Bool { get set }
     /// A flag set when the library should try again connecting to the device (it may be then in a correct state).
     var shouldReconnect: Bool { get set }
-    /// A unique name that the bootloader will use in advertisement packets (used since SDK 14)
+    /// A unique name that the bootloader will use in advertisement packets (used since SDK 14).
     var bootloaderName: String? { get set }
 }
 
@@ -463,7 +467,7 @@ internal protocol DFUPeripheral : DFUPeripheralAPI {
 }
 
 internal class BaseCommonDFUPeripheral<TD : DFUPeripheralDelegate, TS : DFUService> : BaseDFUPeripheral<TD>, DFUPeripheral {
-    /// The peripheral selector instance specified in the initiator
+    /// The peripheral selector instance specified in the initiator.
     internal let peripheralSelector: DFUPeripheralSelectorDelegate
     
     internal typealias DFUServiceType = TS
@@ -485,15 +489,15 @@ internal class BaseCommonDFUPeripheral<TD : DFUPeripheralDelegate, TS : DFUServi
     internal var newAddressExpected  : Bool = false
     internal var bootloaderName      : String?
     
-    override init(_ initiator: DFUServiceInitiator) {
+    override init(_ initiator: DFUServiceInitiator, _ logger: LoggerHelper) {
         self.peripheralSelector = initiator.peripheralSelector
-        super.init(initiator)
+        super.init(initiator, logger)
     }
     
     // MARK: - Base DFU Peripheral API
     
     override func peripheralDidDiscoverDfuService(_ service: CBService) {
-        dfuService = DFUServiceType(service, logger, uuidHelper)
+        dfuService = DFUServiceType(service, logger, uuidHelper, queue)
         dfuService!.targetPeripheral = self
         dfuService!.discoverCharacteristics(
             onSuccess: { self.delegate?.peripheralDidBecomeReady() },

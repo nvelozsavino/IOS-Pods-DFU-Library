@@ -40,9 +40,9 @@ internal class SecureDFUPeripheral : BaseCommonDFUPeripheral<SecureDFUExecutor, 
     
     // MARK: - Implementation
     
-    override init(_ initiator: DFUServiceInitiator) {
+    override init(_ initiator: DFUServiceInitiator, _ logger: LoggerHelper) {
         self.alternativeAdvertisingNameEnabled = initiator.alternativeAdvertisingNameEnabled
-        super.init(initiator)
+        super.init(initiator, logger)
     }
     
     /**
@@ -109,7 +109,7 @@ internal class SecureDFUPeripheral : BaseCommonDFUPeripheral<SecureDFUExecutor, 
     /**
      Creates data object with given length.
      
-     - parameter length: Exact size of the object
+     - parameter length: Exact size of the object.
      */
     func createDataObject(withLength length: UInt32) {
         dfuService!.createDataObject(withLength: length,
@@ -121,7 +121,7 @@ internal class SecureDFUPeripheral : BaseCommonDFUPeripheral<SecureDFUExecutor, 
     /**
      Creates command object with given length.
      
-     - parameter length: Exact size of the object
+     - parameter length: Exact size of the object.
      */
     func createCommandObject(withLength length: UInt32) {
         dfuService!.createCommandObject(withLength: length,
@@ -133,12 +133,15 @@ internal class SecureDFUPeripheral : BaseCommonDFUPeripheral<SecureDFUExecutor, 
     /**
      Sends a given range of data from the firmware.
      
-     - parameter range:    Given range of the firmware will be sent
-     - parameter firmware: The firmware from with part is to be sent
-     - parameter progress: An optional progress delegate
+     - parameter range:    Given range of the firmware will be sent.
+     - parameter firmware: The firmware from with part is to be sent.
+     - parameter progress: An optional progress delegate.
+     - parameter queue:    The queue to dispatch progress events on.
      */
-    func sendNextObject(from range: Range<Int>, of firmware: DFUFirmware, andReportProgressTo progress: DFUProgressDelegate?) {
-        dfuService!.sendNextObject(from: range, of: firmware, andReportProgressTo: progress,
+    func sendNextObject(from range: Range<Int>, of firmware: DFUFirmware,
+                        andReportProgressTo progress: DFUProgressDelegate?, on queue: DispatchQueue) {
+        dfuService!.sendNextObject(from: range, of: firmware,
+            andReportProgressTo: progress, on: queue,
             onSuccess: { self.delegate?.peripheralDidReceiveObject() },
             onError: defaultErrorCallback
         )
@@ -149,7 +152,7 @@ internal class SecureDFUPeripheral : BaseCommonDFUPeripheral<SecureDFUExecutor, 
      On older version of iOS the value may not be greater than ~20 or equal to 0, otherwise a buffer overflow error may occur.
      This library sends the Init packet without PRNs, but that's only because of the Init packet is small enough.
      
-     - parameter newValue: Packet Receipt Notification value (0 to disable PRNs)
+     - parameter newValue: Packet Receipt Notification value (0 to disable PRNs).
      */
     func setPRNValue(_ newValue: UInt16 = 0) {
         dfuService!.setPacketReceiptNotificationValue(newValue,
@@ -162,7 +165,7 @@ internal class SecureDFUPeripheral : BaseCommonDFUPeripheral<SecureDFUExecutor, 
      Sends Init packet. This method is synchronuous and calls delegate's
      `peripheralDidReceiveInitPacket()` method ater the given data are sent.
      
-     - parameter packetData: Data to be sent as Init Packet
+     - parameter packetData: Data to be sent as Init Packet.
      */
     func sendInitPacket(_ packetData: Data){
         // This method is synchronuous.
@@ -185,15 +188,37 @@ internal class SecureDFUPeripheral : BaseCommonDFUPeripheral<SecureDFUExecutor, 
     /**
      Sends Execute command.
      
+     - parameter isCommandObject: True, when it is the Command Object executed, false if a Data Object.
      - parameter activating: If the parameter is set to true the service will assume that the whole firmware was sent
      and the device will disconnect on its own on Execute command. Delegate's onTransferComplete event will be called when
      the disconnect event is receviced.
      */
-    func sendExecuteCommand(andActivateIf activating: Bool = false) {
-        self.activating = activating
+    func sendExecuteCommand(forCommandObject isCommandObject: Bool = false, andActivateIf complete: Bool = false) {
+        activating = complete
         dfuService!.executeCommand(
             onSuccess: { self.delegate?.peripheralDidExecuteObject() },
-            onError: defaultErrorCallback
+            onError: { (error, message) in
+                self.activating = false
+                
+                // In SDK 15.2 (and perhaps 15.x), the DFU target may reoprt only full pages
+                // when reconnected after interrupted DFU. In such case Executing object will fail
+                // with Operation Not Permitted error. Instead, we have to create the new object
+                // and continue sending data assuming the last object executed.
+                if isCommandObject == false && error == DFUError.remoteSecureDFUOperationNotPermitted {
+                    self.delegate?.peripheralDidExecuteObject()
+                    return
+                }
+                
+                // When a remote error is return from a Command Object execution, the library
+                // may still be able to continue with second part of the Firmware, if such exist.
+                if isCommandObject == true && error.isRemote {
+                    self.delegate?.peripheralRejectedCommandObject(withError: error, andMessage: message)
+                    return
+                }
+                
+                // Default action for an error
+                self.delegate?.error(error, didOccurWithMessage: message)
+            }
         )
     }
 }

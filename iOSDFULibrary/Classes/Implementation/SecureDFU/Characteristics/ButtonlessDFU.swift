@@ -23,8 +23,11 @@
 import CoreBluetooth
 
 internal enum ButtonlessDFUOpCode : UInt8 {
+    /// Jump from the main application to Secure DFU bootloader (DFU mode).
     case enterBootloader = 0x01
+    /// Set a new advertisement name when jumping to Secure DFU bootloader (DFU mode).
     case setName         = 0x02
+    /// The response code.
     case responseCode    = 0x20
     
     var code: UInt8 {
@@ -34,15 +37,27 @@ internal enum ButtonlessDFUOpCode : UInt8 {
 
 
 internal enum ButtonlessDFUResultCode : UInt8 {
+    /// The operation completed successfully.
     case success            = 0x01
+    /// The provided opcode was invalid.
     case opCodeNotSupported = 0x02
+    /// The operation failed.
     case operationFailed    = 0x04
+    /// The requested advertisement name was invalid (empty or too long). Only available without bond support.
+    case invalidAdvName     = 0x05
+    /// The request was rejected due to an ongoing asynchronous operation.
+    case busy               = 0x06
+    /// The request was rejected because no bond was created.
+    case notBonded          = 0x07
     
     var description: String {
         switch self {
         case .success:            return "Success"
         case .opCodeNotSupported: return "Operation not supported"
         case .operationFailed:    return "Operation failed"
+        case .invalidAdvName:     return "Invalid advertisment name"
+        case .busy:               return "Busy"
+        case .notBonded:          return "Device not bonded"
         }
     }
     
@@ -58,9 +73,9 @@ internal enum ButtonlessDFURequest {
     var data : Data {
         switch self {
         case .enterBootloader:
-            return Data(bytes: [ButtonlessDFUOpCode.enterBootloader.code])
+            return Data([ButtonlessDFUOpCode.enterBootloader.code])
         case .set(let name):
-            var data = Data(bytes: [ButtonlessDFUOpCode.setName.code])
+            var data = Data([ButtonlessDFUOpCode.setName.code])
             data += UInt8(name.lengthOfBytes(using: String.Encoding.utf8))
             data += name.utf8
             return data
@@ -141,8 +156,8 @@ internal class ButtonlessDFU : NSObject, CBPeripheralDelegate, DFUCharacteristic
      Enables notifications or indications for the DFU Control Point characteristics, depending on the characteristic property.
      Reports success or an error using callbacks.
      
-     - parameter success: Method called when notifications were successfully enabled
-     - parameter report:  Method called in case of an error
+     - parameter success: Method called when notifications were successfully enabled.
+     - parameter report:  Method called in case of an error.
      */
     func enable(onSuccess success: Callback?, onError report: ErrorCallback?) {
         // Save callbacks
@@ -197,9 +212,9 @@ internal class ButtonlessDFU : NSObject, CBPeripheralDelegate, DFUCharacteristic
      Sends given request to the Buttonless DFU characteristic. Reports success or an error
      using callbacks.
      
-     - parameter request: Request to be sent
-     - parameter success: Method called when peripheral reported with status success
-     - parameter report:  Method called in case of an error
+     - parameter request: Request to be sent.
+     - parameter success: Method called when peripheral reported with status success.
+     - parameter report:  Method called in case of an error.
      */
     func send(_ request: ButtonlessDFURequest, onSuccess success: Callback?, onError report: ErrorCallback?) {
         // Save callbacks and parameter
@@ -290,9 +305,9 @@ internal class ButtonlessDFU : NSObject, CBPeripheralDelegate, DFUCharacteristic
                     success?()
                 } else {
                     logger.e("Error \(dfuResponse.status!.code): \(dfuResponse.status!.description)")
-                    // The returned errod code is incremented by 30 or 9000 to match Buttonless DFU or Experimental Buttonless DFU remote codes
+                    // The returned errod code is incremented by 90 or 9000 to match Buttonless DFU or Experimental Buttonless DFU remote codes
                     // See DFUServiceDelegate.swift -> DFUError
-                    let offset = characteristic.uuid.isEqual(uuidHelper.buttonlessExperimentalCharacteristic) ? 9000 : 30
+                    let offset = characteristic.uuid.isEqual(uuidHelper.buttonlessExperimentalCharacteristic) ? 9000 : 90
                     report?(DFUError(rawValue: Int(dfuResponse.status!.code) + offset)!, dfuResponse.status!.description)
                 }
             } else {
