@@ -1,12 +1,30 @@
 ### Changelog
+- **4.6.1**
+   - Bugfix: DFU stability improved for DFU from SDK 15 and newer.
+   - Improvement: DFU tests for SDK 15.3 and 16 added.
+   - Bugfix: MInor issue fixed in the sample app.
+   
+- **4.6.0**
+    - Feature: Automatic retrying DFU on disconnection during update. 
+    - Bugfix: Some delegates were called on a wrong queue (#339).
+    - Bugfix: DFU from SDK 6.0 fixed. PRN is forced set to 1. 
+    - Improvement: The sample app has been modified to work on iOS 13.
+    
+- **4.5.1**
+    - Bugfix: Fixed an issue where DFU could not be started on iOS 13 (#322). 
+    
+- **4.5.0**
+    - Improvement: Hex2Bin converter rewritten to Swift 5.
+    - Library released in Swift Package Manager (SPM).
+
 - **4.4.2**
-    - Bugfix: Missing buttonless service statuses added (#297)
-    - Improvement: Added support for older Swift versions (#295)
+    - Bugfix: Missing buttonless service statuses added (#297).
+    - Improvement: Added support for older Swift versions (#295).
     - Improvement: ZIPFoundation dependency bound to 0.9.9.
 
 - **4.4.1**
-    - Bugfix: Fixed calculatign number of bytes received from PRN (#288).
-    - Improvement: ZIPFoundation dependency upgraded to 0.9.9. (#281)
+    - Bugfix: Fixed calculating number of bytes received from PRN (#288).
+    - Improvement: ZIPFoundation dependency upgraded to 0.9.9 (#281).
 
 - **4.4.0**
     - Improvement: Swift 5.0 migration.
