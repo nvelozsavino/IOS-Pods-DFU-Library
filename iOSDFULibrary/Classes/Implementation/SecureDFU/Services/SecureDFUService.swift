@@ -581,30 +581,31 @@ import CoreBluetooth
             
             // If the device may support setting alternative advertising name in the
             // bootloader mode, try it.
-            if let name = name, buttonlessDfuCharacteristic!.maySupportSettingName {
-                logger.v("Trying setting bootloader name to \(name)")
-                buttonlessDfuCharacteristic!.send(ButtonlessDFURequest.set(name: name),
-                    onSuccess: {
-                        // Success. The buttonless service is from SDK 14.0+.
-                        // The bootloader, after jumping to it, will advertise with this name.
-                        self.targetPeripheral!.bootloaderName = name
-                        self.logger.a("Bootloader name changed successfully")
-                        enterBootloader()
-                    }, onError: {
-                        error, message in
-                        if error == .remoteButtonlessDFUOpCodeNotSupported {
-                            // Setting name is not supported. Looks like it's buttonless service
-                            // from SDK 13. We can't rely on bootloader's name.
-                            self.logger.w("Setting bootloader name not supported")
-                            enterBootloader()
-                        } else {
-                            // Something else got wrong.
-                            report(error, message)
-                        }
-                    })
-            } else {
+//             if let name = name, buttonlessDfuCharacteristic!.maySupportSettingName {
+//                 logger.v("Trying setting bootloader name to \(name)")
+//                 buttonlessDfuCharacteristic!.send(ButtonlessDFURequest.set(name: name),
+//                     onSuccess: {
+//                         // Success. The buttonless service is from SDK 14.0+.
+//                         // The bootloader, after jumping to it, will advertise with this name.
+//                         self.targetPeripheral!.bootloaderName = name
+//                         self.logger.a("Bootloader name changed successfully")
+//                         enterBootloader()
+//                     }, onError: {
+//                         error, message in
+//                         if error == .remoteButtonlessDFUOpCodeNotSupported {
+//                             // Setting name is not supported. Looks like it's buttonless service
+//                             // from SDK 13. We can't rely on bootloader's name.
+//                             self.logger.w("Setting bootloader name not supported")
+//                             enterBootloader()
+//                         } else {
+//                             // Something else got wrong.
+//                             report(error, message)
+//                         }
+//                     })
+//             } else {
+                logger.v("Not even trying to setting bootloader name")
                 enterBootloader()
-            }
+//             }
         } else {
             sendReset(onError: report)
         }
